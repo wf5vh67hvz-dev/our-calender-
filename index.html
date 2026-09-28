@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>우리 캘린더</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f3f3;color:#111;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+.app{max-width:980px;margin:auto;padding:14px 10px 36px}.top{display:flex;align-items:center;justify-content:space-between;gap:8px}.brand{font-size:23px;font-weight:900}.actions{display:flex;gap:6px}button{border:0;background:#fff;border-radius:10px;padding:9px 11px;font-weight:700;cursor:pointer}.black{background:#111;color:#fff}
+.members{display:flex;gap:6px;overflow:auto;margin:10px 0}.member{background:#fff;border-radius:18px;padding:7px 10px;white-space:nowrap;font-size:12px}.member button{padding:0 0 0 5px;background:none;color:#888}
+.nav{display:flex;align-items:center;justify-content:space-between;margin:4px 0 9px}.nav button{font-size:23px;padding:5px 14px}.month{font-size:19px;font-weight:900}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#111;border:1px solid #111;border-radius:13px;overflow:hidden}.dow{background:#111;color:#fff;text-align:center;padding:8px 1px;font-size:11px;font-weight:800}.day{background:#fff;min-height:112px;padding:6px;cursor:pointer}.day.other{background:#e7e7e7;color:#999}.day.has{background:#d5d5d5}.day.sel{box-shadow:inset 0 0 0 3px #111}.num{font-weight:900;font-size:13px;margin-bottom:4px}.ev{border-radius:4px;padding:3px 4px;margin:2px 0;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ev .person{opacity:.7}
+.detail{margin-top:12px;background:#fff;border-radius:14px;padding:14px}.detailtop{display:flex;justify-content:space-between;align-items:center}.detail h2{font-size:16px;margin:0}.item{display:flex;gap:9px;align-items:center;border-top:1px solid #eee;padding:11px 0}.bar{width:7px;min-height:42px;border-radius:6px}.main{flex:1}.name{font-weight:900}.meta{font-size:11px;color:#777;margin-top:3px}.tag{display:inline-block;margin-top:5px;background:#eee;border-radius:12px;padding:4px 8px;font-size:10px}.empty{text-align:center;color:#999;padding:18px;font-size:12px}
+.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;z-index:10}.hidden{display:none}.sheet{background:#fff;width:min(620px,100%);margin:auto;border-radius:22px 22px 0 0;padding:18px;max-height:94vh;overflow:auto}.sheettop{display:flex;justify-content:space-between}.sheet h2{margin:0 0 12px}.label{display:block;font-size:12px;font-weight:800;margin:9px 0}.input{width:100%;margin-top:5px;padding:11px;border:1px solid #ddd;border-radius:10px;font:inherit}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.colors{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:6px}.c{height:29px;border-radius:7px;border:2px solid transparent}.c.on{border-color:#fff;outline:2px solid #111}.save{width:100%;background:#111;color:#fff;padding:13px;margin-top:11px}.delete{width:100%;background:#ffe7e7;color:#c00;padding:12px;margin-top:7px}.sharebox{background:#f4f4f4;border-radius:12px;padding:10px;margin-top:10px}.shareurl{font-size:10px;word-break:break-all;max-height:65px;overflow:auto;margin:7px 0;color:#555}.copy{width:100%;background:#111;color:#fff}
+@media(max-width:600px){.day{min-height:78px;padding:4px}.ev{font-size:8px;padding:2px}.cal{border-radius:9px}.actions button{padding:8px}.day:nth-child(n){min-height:76px}}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="top"><div class="brand">우리 캘린더</div><div class="actions"><button onclick="today()">오늘</button><button onclick="openForm()" class="black">＋ 일정</button><button onclick="makeShare()" class="black">공유</button></div></div>
+ <div class="members" id="members"></div>
+ <div class="nav"><button onclick="move(-1)">‹</button><div class="month" id="month"></div><button onclick="move(1)">›</button></div>
+ <div class="cal" id="cal"></div>
+ <div class="detail"><div class="detailtop"><h2 id="dt"></h2><button onclick="openForm()" class="black">＋ 일정 추가</button></div><div id="list"></div></div>
+</div>
+
+<div class="modal hidden" id="formModal"><div class="sheet">
+ <div class="sheettop"><h2 id="ft">일정 추가</h2><button onclick="closeForm()">×</button></div>
+ <form id="form">
+  <input type="hidden" id="eid">
+  <label class="label">날짜<input class="input" id="date" type="date" required></label>
+  <label class="label">일정 이름<input class="input" id="name" maxlength="80" required placeholder="예: 출근, 생일, 약속"></label>
+  <div class="row"><label class="label">시작<input class="input" id="time" type="time"></label><label class="label">종료<input class="input" id="end" type="time"></label></div>
+  <label class="label">멤버<select class="input" id="person"></select></label>
+  <label class="label">메모<textarea class="input" id="note" rows="3"></textarea></label>
+  <label class="label">색상<div class="colors" id="colors"></div></label><input type="hidden" id="color">
+  <button class="save">저장</button><button type="button" class="delete hidden" id="del">삭제</button>
+ </form>
+</div></div>
+
+<div class="modal hidden" id="shareModal"><div class="sheet">
+ <div class="sheettop"><h2>캘린더 공유</h2><button onclick="closeShare()">×</button></div>
+ <p style="font-size:13px;color:#666">아래 링크를 복사해서 보내면, 현재 일정이 들어있는 캘린더를 열 수 있어</p>
+ <div class="sharebox"><div class="shareurl" id="shareurl"></div><button class="copy" onclick="copyShare()">링크 복사</button></div>
+ <p style="font-size:11px;color:#999;margin-top:12px">※ 테스트 버전은 링크 안에 일정 정보가 저장되는 방식이야. 링크를 받은 사람이 수정한 내용이 원래 캘린더에 실시간으로 합쳐지는 방식은 아니야</p>
+</div></div>
+
+<script>
+const colors=[["빨강","#ef4444"],["주황","#f97316"],["노랑","#eab308"],["연두","#84cc16"],["초록","#22c55e"],["민트","#14b8a6"],["청록","#06b6d4"],["하늘","#38bdf8"],["파랑","#3b82f6"],["남색","#4f46e5"],["보라","#8b5cf6"],["자주","#a855f7"],["분홍","#ec4899"],["진분홍","#db2777"],["갈색","#92400e"],["회색","#6b7280"],["검정","#111"],["연보라","#c4b5fd"],["연분홍","#f9a8d4"],["연파랑","#93c5fd"],["연초록","#86efac"],["연주황","#fdba74"],["금색","#ca8a04"],["청회색","#64748b"]];
+let members=JSON.parse(localStorage.getItem("calMembers")||'["가은","멤버 2","멤버 3","멤버 4"]');
+let events=JSON.parse(localStorage.getItem("calEvents")||"[]");
+let view=new Date(),selected=new Date();
+const pad=n=>String(n).padStart(2,"0"), key=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function save(){localStorage.setItem("calEvents",JSON.stringify(events));localStorage.setItem("calMembers",JSON.stringify(members))}
+function setup(){renderMembers();document.getElementById("person").innerHTML=members.map(x=>`<option>${esc(x)}</option>`).join("");document.getElementById("colors").innerHTML=colors.map(c=>`<button type="button" class="c" title="${c[0]}" data-v="${c[1]}" style="background:${c[1]}"></button>`).join("");document.querySelectorAll(".c").forEach(b=>b.onclick=()=>{document.querySelectorAll(".c").forEach(x=>x.classList.remove("on"));b.classList.add("on");color.value=b.dataset.v})}
+function renderMembers(){document.getElementById("members").innerHTML=members.map((m,i)=>`<span class="member">● ${esc(m)}</span>`).join("")}
+function render(){
+ month.textContent=`${view.getFullYear()}년 ${view.getMonth()+1}월`;
+ cal.innerHTML=["일","월","화","수","목","금","토"].map(x=>`<div class="dow">${x}</div>`).join("");
+ let first=new Date(view.getFullYear(),view.getMonth(),1),start=new Date(first);start.setDate(1-first.getDay());
+ for(let i=0;i<42;i++){let d=new Date(start);d.setDate(start.getDate()+i);let es=events.filter(e=>e.date===key(d));let c=document.createElement("div");c.className="day"+(d.getMonth()!=view.getMonth()?" other":"")+(es.length?" has":"")+(key(d)==key(selected)?" sel":"");c.onclick=()=>{selected=new Date(d);render()};c.innerHTML=`<div class="num">${d.getDate()}</div>`+es.slice(0,4).map(e=>`<div class="ev" style="background:${e.color}22;color:#111" onclick="event.stopPropagation();edit('${e.id}')">${esc(e.name)}${e.person?` <span class="person">· ${esc(e.person)}</span>`:""}</div>`).join("");cal.appendChild(c)}
+ renderDetail()
+}
+function renderDetail(){
+ dt.textContent=`${selected.getFullYear()}년 ${selected.getMonth()+1}월 ${selected.getDate()}일`;
+ let es=events.filter(e=>e.date===key(selected)).sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
+ list.innerHTML=es.length?es.map(e=>`<div class="item"><div class="bar" style="background:${e.color}"></div><div class="main"><div class="name">${esc(e.name)}</div><div class="meta">${e.time||"시간 미정"}${e.end?" ~ "+e.end:""}</div><span class="tag">${esc(e.person)}</span>${e.note?`<div class="meta">${esc(e.note)}</div>`:""}</div><button onclick="edit('${e.id}')">수정</button></div>`).join(""):'<div class="empty">일정이 없는 날이에요</div>'
+}
+function openForm(e={}){formModal.classList.remove("hidden");eid.value=e.id||"";date.value=e.date||key(selected);name.value=e.name||"";time.value=e.time||"";end.value=e.end||"";person.value=e.person||members[0];note.value=e.note||"";color.value=e.color||colors[0][1];ft.textContent=e.id?"일정 수정":"일정 추가";del.classList.toggle("hidden",!e.id);document.querySelectorAll(".c").forEach(x=>x.classList.toggle("on",x.dataset.v===(e.color||colors[0][1])))}
+function edit(id){openForm(events.find(e=>e.id===id))}
+function closeForm(){formModal.classList.add("hidden")}
+form.onsubmit=e=>{e.preventDefault();let id=eid.value,item={id:id||crypto.randomUUID(),date:date.value,name:name.value.trim(),time:time.value,end:end.value,person:person.value,note:note.value.trim(),color:color.value||colors[0][1]};if(id)events[events.findIndex(x=>x.id===id)]=item;else events.push(item);save();selected=new Date(item.date+"T00:00:00");view=new Date(selected);closeForm();render()}
+del.onclick=()=>{events=events.filter(e=>e.id!==eid.value);save();closeForm();render()}
+function move(n){view.setMonth(view.getMonth()+n);render()}function today(){view=new Date();selected=new Date();render()}
+function encodeData(){return btoa(unescape(encodeURIComponent(JSON.stringify({events,members})))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function decodeData(s){try{return JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"==".slice((s.length+2)%4)))))}catch(e){return null}}
+function makeShare(){let data=encodeData(),url=location.href.split("#")[0]+"#share="+data;shareurl.textContent=url;shareModal.classList.remove("hidden");window._shareUrl=url}
+function closeShare(){shareModal.classList.add("hidden")}
+async function copyShare(){try{await navigator.clipboard.writeText(window._shareUrl);alert("공유 링크가 복사됐어")}catch(e){prompt("아래 링크를 복사해줘",window._shareUrl)}}
+function loadShare(){let h=location.hash;if(!h.startsWith("#share="))return;let d=decodeData(h.slice(7));if(d&&Array.isArray(d.events)){events=d.events;members=d.members||members;save();setup();history.replaceState(null,"",location.pathname+location.search)}}
+setup();loadShare();render();
+</script>
+</body></html>
